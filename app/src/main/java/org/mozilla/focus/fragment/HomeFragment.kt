@@ -6,8 +6,7 @@ package org.mozilla.focus.fragment
 
 import android.graphics.Color
 import android.os.Bundle
-import android.support.annotation.DrawableRes
-import android.support.annotation.StringRes
+import android.content.Context
 import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -18,11 +17,16 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import kotlinx.android.synthetic.main.fragment_home.*
+import org.json.JSONObject
 import org.mozilla.focus.R
 import org.mozilla.focus.autocomplete.UrlAutoCompleteFilter
 import org.mozilla.focus.telemetry.TelemetryWrapper
 import org.mozilla.focus.telemetry.UrlTextInputLocation
+import org.mozilla.focus.utils.HomeTileUtils
 import org.mozilla.focus.utils.OnUrlEnteredListener
+import android.graphics.BitmapFactory
+
+
 
 private const val COL_COUNT = 5
 
@@ -55,7 +59,12 @@ class HomeFragment : Fragment() {
     }
 
     private fun initTiles() = with (tileContainer) {
-        adapter = HomeTileAdapter(onUrlEnteredListener)
+        var homeTiles = mutableListOf<JSONObject>()
+        val jsonArray = HomeTileUtils.loadDefaultTiles(context).getJSONArray("default_tiles")
+        for (i in 0..(jsonArray.length() - 1)) {
+            homeTiles.add(jsonArray.getJSONObject(i))
+        }
+        adapter = HomeTileAdapter(onUrlEnteredListener, homeTiles, context)
         layoutManager = GridLayoutManager(context, COL_COUNT)
         setHasFixedSize(true)
     }
@@ -75,29 +84,30 @@ class HomeFragment : Fragment() {
     }
 }
 
-private class HomeTileAdapter(val onUrlEnteredListener: OnUrlEnteredListener) :
+private class HomeTileAdapter(val onUrlEnteredListener: OnUrlEnteredListener, homeTiles: MutableList<JSONObject>, context: Context) :
         RecyclerView.Adapter<TileViewHolder>() {
-
+    val context = context
     val tiles = listOf(
-            HomeTile("https://youtube.com/tv", R.string.tile_youtube_tv, R.drawable.tile_youtube),
-            HomeTile("https://www.google.com/search?tbm=vid", R.string.tile_google_video_search, R.drawable.tile_google),
-            HomeTile("http://imdb.com", R.string.tile_imdb, R.drawable.tile_imdb),
-            HomeTile("https://www.rottentomatoes.com", R.string.tile_rottentomatoes, R.drawable.tile_rotten_tomatoes),
+            HomeTile(homeTiles[0].getJSONObject("tile_1").getString("url"), homeTiles[0].getJSONObject("tile_1").getString("title"), homeTiles[0].getJSONObject("tile_1").getString("img")),
+            HomeTile(homeTiles[1].getJSONObject("tile_2").getString("url"), homeTiles[1].getJSONObject("tile_2").getString("title"), homeTiles[1].getJSONObject("tile_2").getString("img")),
+            HomeTile(homeTiles[2].getJSONObject("tile_3").getString("url"), homeTiles[2].getJSONObject("tile_3").getString("title"), homeTiles[2].getJSONObject("tile_3").getString("img")),
+            HomeTile(homeTiles[3].getJSONObject("tile_4").getString("url"), homeTiles[3].getJSONObject("tile_4").getString("title"), homeTiles[3].getJSONObject("tile_4").getString("img")),
 
             // order?
-            HomeTile("http://metacritic.com", R.string.tile_metacritic, R.drawable.tile_metacritic),
-            HomeTile("http://fandango.com", R.string.tile_fandango, R.drawable.tile_fandango),
+            HomeTile(homeTiles[4].getJSONObject("tile_5").getString("url"), homeTiles[4].getJSONObject("tile_5").getString("title"), homeTiles[4].getJSONObject("tile_5").getString("img")),
+            HomeTile(homeTiles[5].getJSONObject("tile_6").getString("url"), homeTiles[5].getJSONObject("tile_6").getString("title"), homeTiles[5].getJSONObject("tile_6").getString("img")),
 
-            HomeTile("https://hollywoodreporter.com", R.string.tile_hollywood_reporter, R.drawable.tile_hollywood_reporter),
-            HomeTile("https://flickr.com", R.string.tile_flickr, R.drawable.tile_flickr),
-            HomeTile("https://instagram.com", R.string.tile_instagram, R.drawable.tile_instagram), // sign in required
-            HomeTile("https://pinterest.com", R.string.tile_pinterest, R.drawable.tile_pinterest) // sign in required
+            HomeTile(homeTiles[6].getJSONObject("tile_7").getString("url"), homeTiles[6].getJSONObject("tile_7").getString("title"), homeTiles[6].getJSONObject("tile_7").getString("img")),
+            HomeTile(homeTiles[7].getJSONObject("tile_8").getString("url"), homeTiles[7].getJSONObject("tile_8").getString("title"), homeTiles[7].getJSONObject("tile_8").getString("img")),
+            HomeTile(homeTiles[8].getJSONObject("tile_9").getString("url"), homeTiles[8].getJSONObject("tile_9").getString("title"), homeTiles[8].getJSONObject("tile_9").getString("img")), // sign in required
+            HomeTile(homeTiles[9].getJSONObject("tile_10").getString("url"), homeTiles[9].getJSONObject("tile_10").getString("title"), homeTiles[9].getJSONObject("tile_10").getString("img")) // sign in required
     )
 
     override fun onBindViewHolder(holder: TileViewHolder, position: Int) = with (holder) {
         val item = tiles[position]
-        titleView.setText(item.titleRes)
-        iconView.setImageResource(item.imageRes)
+        titleView.setText(item.title)
+        val bmImg = BitmapFactory.decodeStream(context.assets.open("defaults/" + item.imagePath))
+        iconView.setImageBitmap(bmImg)
         itemView.setOnClickListener {
             onUrlEnteredListener.onNonTextInputUrlEntered(item.url)
             TelemetryWrapper.homeTileClickEvent()
@@ -133,6 +143,6 @@ private class TileViewHolder(
 
 private data class HomeTile (
         val url: String,
-        @StringRes val titleRes: Int,
-        @DrawableRes val imageRes: Int
+        val title: String,
+        val imagePath: String
 )
