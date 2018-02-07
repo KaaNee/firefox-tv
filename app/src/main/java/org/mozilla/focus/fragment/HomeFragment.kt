@@ -26,8 +26,6 @@ import org.mozilla.focus.utils.HomeTileUtils
 import org.mozilla.focus.utils.OnUrlEnteredListener
 import android.graphics.BitmapFactory
 
-
-
 private const val COL_COUNT = 5
 
 /** The home fragment which displays the navigation tiles of the app. */
